@@ -1,0 +1,123 @@
+﻿@page "/training/{id}"
+@using Models
+@using Utility
+@inject HttpClient http
+@rendermode InteractiveAuto
+
+@if (workout == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <h3>We're doing @workout.Name then!</h3>
+    @if(repsWorkout != null)
+    {
+        string roundString = repsWorkout.rounds == 1 ? "round" : "rounds";
+
+        <h5>Do these:</h5>
+        <table class="table">
+            <tbody>
+                @foreach (Exercise exercise in repsWorkout.exerciseList)
+                {
+                    <tr>
+                        <td>
+                            @exercise.Name
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        <h5>@repsWorkout.reps times in @repsWorkout.rounds @roundString and you'll be good!</h5>
+    }
+    else
+    {
+        @if (!isTraining)
+        {
+            <h5>Are you ready?</h5>
+            <button class="btn btn-primary" @onclick="PreparePeriod">Start!</button>
+        }
+        else
+        {
+            <h5>
+                Now do: @if (currentExercise != null) { <h5>@currentExercise.Name</h5>  }
+                <br/>
+                Period: @round
+                <br />
+                Round: @roundIndex
+                <br/>
+                Time left: @timeRemaining
+            </h5>
+
+        }
+    }
+
+}
+
+
+@code {
+    [Parameter]
+    public string id { get; set;  }
+
+    Workout? workout = null;
+    RepsWorkout? repsWorkout = null;
+    TimedWorkout? timedWorkout = null;
+
+    Exercise? currentExercise = null;
+    bool isTraining = false;
+    string round = "Rest";
+    int timeRemaining = 0;
+    int prepTime = 5;
+    int roundIndex = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        repsWorkout = await http.GetFromJsonAsync<RepsWorkout>($"http://localhost:5016/api/Workouts/id={id}");
+        workout = repsWorkout;
+        if(repsWorkout?.isTimed == 1)
+        {
+            timedWorkout = await http.GetFromJsonAsync<TimedWorkout>($"http://localhost:5016/api/Workouts/id={id}");
+            repsWorkout = null;
+        }
+
+        Console.WriteLine("loaded");
+    }
+
+    void PreparePeriod()
+    {
+        if (isTraining == true)
+            return;
+        isTraining = true;
+        round = "Prepare!";
+        timeRemaining = prepTime;
+        Clock.StartClock(prepTime, Tick, TimedTrainingRound);
+    }
+
+    void Tick(int time)
+    {
+        timeRemaining = time;
+        StateHasChanged();
+    }
+
+    void TimedTrainingRound()
+    {
+        round = "Work!";
+        if (timedWorkout?.exercisesCount > ++roundIndex)
+        {
+            currentExercise = timedWorkout?.exerciseList[roundIndex];
+            Clock.StartClock(timedWorkout!.workTime, Tick, TimedTrainingBreak);
+        }
+        else
+            isTraining = false;
+        StateHasChanged();
+    }
+
+    void TimedTrainingBreak()
+    {
+        round = "Rest!";
+        StateHasChanged();
+        Clock.StartClock(timedWorkout!.restTime, Tick, TimedTrainingRound);
+    }
+
+}

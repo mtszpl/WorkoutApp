@@ -1,0 +1,28 @@
+﻿@page "/selection"
+@using Models
+@inject HttpClient http
+
+<PageTitle>Selection</PageTitle>
+<h3>What body part you want to work on?</h3>
+
+<ul>
+    <li>
+            <NavLink href="choice/2">
+                Arms
+            </NavLink>
+    </li>
+    <li>
+            <NavLink href="choice/1">
+                Legs
+            </NavLink>
+    </li>
+    <li>
+            <NavLink href="choice/0">
+                Abs
+            </NavLink>
+    </li>
+</ul>
+
+@code {
+
+}

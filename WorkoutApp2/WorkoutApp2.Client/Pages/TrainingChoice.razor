@@ -1,0 +1,47 @@
+﻿@page "/choice/{muscleGroup}"
+@using Models
+@inject HttpClient http
+@inject NavigationManager navManager
+@rendermode InteractiveAuto
+
+<h3>TrainingChoice</h3>
+
+@if (workouts.Count == 0)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>Available trainings:</thead>
+        <tbody>
+            @foreach (Workout workout in workouts)
+            {
+                Workout localWorkout = workout;
+                <tr @onclick="() => SelectedTraining(localWorkout.Id)">
+                    <td>
+                        @workout.Name
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    List<Workout> workouts = new List<Workout>();
+
+    [Parameter]
+    public string? muscleGroup { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        workouts = await http.GetFromJsonAsync<List<Workout>>($"http://localhost:5016/api/Workouts/{muscleGroup}");
+    }
+
+    void SelectedTraining(int id)
+    {
+        navManager.NavigateTo($"/training/{id}");
+    }
+
+}
